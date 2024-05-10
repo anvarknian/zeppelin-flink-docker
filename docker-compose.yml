@@ -1,0 +1,67 @@
+version: '3.4'
+services:
+  redpanda-0:
+      command:
+        - redpanda
+        - start
+        - --kafka-addr internal://0.0.0.0:9092,external://0.0.0.0:19092
+        - --advertise-kafka-addr internal://redpanda-0:9092,external://localhost:19092
+        - --pandaproxy-addr internal://0.0.0.0:8082,external://0.0.0.0:18082
+        - --advertise-pandaproxy-addr internal://redpanda-0:8082,external://localhost:18082
+        - --schema-registry-addr internal://0.0.0.0:8081,external://0.0.0.0:18081
+        - --rpc-addr redpanda-0:33145
+        - --advertise-rpc-addr redpanda-0:33145
+        - --mode dev-container
+        - --smp 1
+        - --default-log-level=info
+      image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
+      container_name: redpanda-0
+      ports:
+        - 19092:19092
+
+  jobmanager:
+    image: flink:1.12-scala_2.12
+    platform: linux/amd64
+    container_name: jobmanager
+    ports:
+      - "8081:8081"
+    command: jobmanager
+    environment:
+      - |
+        FLINK_PROPERTIES=
+        jobmanager.rpc.address: jobmanager
+    volumes:
+      - flink-volume:/opt/flink
+
+  taskmanager:
+    image: flink:1.12-scala_2.12
+    platform: linux/amd64
+    container_name: taskmanager
+    command: taskmanager
+    scale: 1
+    environment:
+
+        jobmanager.rpc.address: jobmanager
+        taskmanager.numberOfTaskSlots: 20
+    depends_on:
+      - jobmanager
+  
+  zeppelin:
+    image: apache/zeppelin:0.10.1
+    platform: linux/amd64
+    container_name: zeppelin
+    ports:
+      - "8080:8080"
+      - "4040:4040"
+    volumes:
+      - flink-volume:/opt/flink
+    environment:
+      FLINK_HOME: /opt/flink
+      flink.execution.mode: remote
+      flink.execution.remote.port: 8081
+      flink.execution.remote.host: jobmanager
+    depends_on:
+      - taskmanager
+
+volumes:
+  flink-volume:
