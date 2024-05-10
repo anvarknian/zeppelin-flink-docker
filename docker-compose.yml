@@ -20,7 +20,7 @@ services:
         - 19092:19092
 
   jobmanager:
-    image: flink:1.12-scala_2.12
+    image: flink:1.14.6-scala_2.11-java11
     platform: linux/amd64
     container_name: jobmanager
     ports:
@@ -30,13 +30,13 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2
-        parallelism.default: 2
+        taskmanager.numberOfTaskSlots: 10
+        parallelism.default: 10
     volumes:
       - flink-volume:/opt/flink
 
   taskmanager:
-    image: flink:1.12-scala_2.12
+    image: flink:1.14.6-scala_2.11-java11
     platform: linux/amd64
     container_name: taskmanager
     command: taskmanager
@@ -45,8 +45,8 @@ services:
       - |
         FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 2
-        parallelism.default: 2
+        taskmanager.numberOfTaskSlots: 10
+        parallelism.default: 10
     depends_on:
       - jobmanager
   
@@ -59,11 +59,12 @@ services:
       - "4040:4040"
     volumes:
       - flink-volume:/opt/flink
+      - ./logs:/logs
+      - ./notebook:/notebook
     environment:
+      ZEPPELIN_LOG_DIR: /logs
+      ZEPPELIN_NOTEBOOK_DIR: /notebook
       FLINK_HOME: /opt/flink
-      flink.execution.mode: remote
-      flink.execution.remote.port: 8081
-      flink.execution.remote.host: jobmanager
     depends_on:
       - jobmanager
       - taskmanager
