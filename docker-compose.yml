@@ -1,6 +1,9 @@
 version: '3.4'
 services:
   redpanda-0:
+      image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
+      platform: linux/amd64
+      container_name: redpanda-0
       command:
         - redpanda
         - start
@@ -14,8 +17,6 @@ services:
         - --mode dev-container
         - --smp 1
         - --default-log-level=info
-      image: docker.redpanda.com/redpandadata/redpanda:v24.1.1
-      container_name: redpanda-0
       ports:
         - 19092:19092
 
@@ -40,9 +41,11 @@ services:
     command: taskmanager
     scale: 1
     environment:
-
+      - |
+        FLINK_PROPERTIES=
         jobmanager.rpc.address: jobmanager
-        taskmanager.numberOfTaskSlots: 20
+        taskmanager.numberOfTaskSlots: 2
+        parallelism.default: 2
     depends_on:
       - jobmanager
   
@@ -61,6 +64,7 @@ services:
       flink.execution.remote.port: 8081
       flink.execution.remote.host: jobmanager
     depends_on:
+      - jobmanager
       - taskmanager
 
 volumes:
