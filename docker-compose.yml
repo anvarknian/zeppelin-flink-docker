@@ -60,7 +60,7 @@ services:
     volumes:
       - flink-volume:/opt/flink
       - ./logs:/logs
-      - ./notebook:/notebook/local
+      - ./notebook:/notebook
     environment:
       ZEPPELIN_LOG_DIR: /logs
       ZEPPELIN_NOTEBOOK_DIR: /notebook
