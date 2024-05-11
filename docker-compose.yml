@@ -20,18 +20,19 @@ services:
         - 19092:19092
   
   zeppelin:
-    image: apache/zeppelin:0.11.1
+    image: apache/zeppelin:${ZEPPELIN_VERSION}
     platform: linux/amd64
     container_name: zeppelin
     ports:
       - "8080:8080"
       - "8081:8081"
       - "8082:8082"
+
     volumes:
-      - ./flink:/opt/flink
+      - "./${FLINK_FOLDER}:/opt/flink"
       - ./logs:/logs
-      # - ./notebook:/notebook
+      - ./notebook:/notebook
     environment:
-      ZEPPELIN_LOG_DIR: /logs
-      # ZEPPELIN_NOTEBOOK_DIR: /notebook
       FLINK_HOME: /opt/flink
+      ZEPPELIN_LOG_DIR: /logs
+      ZEPPELIN_NOTEBOOK_DIR: /notebook
