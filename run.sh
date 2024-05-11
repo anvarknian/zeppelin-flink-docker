@@ -1,25 +1,35 @@
 #!/bin/bash
 
-FLINK_VERSION="1.15.4"
-SCALA_VERSION="2.12"
-FLINK_SQL="1.6.0"
+# Source environment variables
+source .env
 
-if [ -d "./flink" ]; then
-    echo "Flink exists"
-else
-    curl -o flink.tar https://archive.apache.org/dist/flink/flink-${FLINK_VERSION}/flink-${FLINK_VERSION}-bin-scala_${SCALA_VERSION}.tgz
-    tar -xvzf flink.tar
-    mv flink-${FLINK_VERSION} ./flink
-    cp -r flink/opt/flink-table-planner*.jar flink/lib 
-    cp -r flink/lib/flink-table-planner-loader*.jar flink/opt 
-    curl -o flink/lib/flink-table-api-scala_${SCALA_VERSION}-${FLINK_VERSION}.jar https://repo1.maven.org/maven2/org/apache/flink/flink-table-api-scala_${SCALA_VERSION}/${FLINK_VERSION}/flink-table-api-scala_${SCALA_VERSION}-${FLINK_VERSION}.jar
-    curl -o flink/lib/flink-table-api-scala-bridge_${SCALA_VERSION}-${FLINK_VERSION}.jar https://repo1.maven.org/maven2/org/apache/flink/flink-table-api-scala-bridge_${SCALA_VERSION}/${FLINK_VERSION}/flink-table-api-scala-bridge_${SCALA_VERSION}-${FLINK_VERSION}.jar
-    curl -o flink/lib/flink-sql-client-${FLINK_SQL}.jar https://repo1.maven.org/maven2/org/apache/flink/flink-sql-client/${FLINK_SQL}/flink-sql-client-${FLINK_SQL}.jar
+# Function to download files if they don't exist
+download_if_not_exists() {
+    if [ ! -e "$1" ]; then
+        curl -o "$1" "$2" -q
+    fi
+}
+
+if [ ! -e "${FLINK_FOLDER}.tar" ]; then
+    echo "Downloading Flink archive..."
+    download_if_not_exists "${FLINK_FOLDER}.tar" "https://archive.apache.org/dist/flink/${FLINK_FOLDER}/${FLINK_FOLDER}-bin-scala_${SCALA_VERSION}.tgz"
 fi
 
+if [ ! -d "./${FLINK_FOLDER}" ]; then
+    tar -xvzf ${FLINK_FOLDER}.tar
+    echo "Copying Flink dependencies..."
+    cp -r ${FLINK_FOLDER}/opt/flink-table-planner*.jar ${FLINK_FOLDER}/lib
+    cp -r ${FLINK_FOLDER}/lib/flink-table-planner-loader*.jar ${FLINK_FOLDER}/opt
 
-docker compose down && docker compose up -d
+    download_if_not_exists "${FLINK_FOLDER}/lib/flink-table-api-scala_${LIB_VERSION}.jar" "https://repo1.maven.org/maven2/org/apache/flink/flink-table-api-scala_${SCALA_VERSION}/${FLINK_VERSION}/flink-table-api-scala_${LIB_VERSION}.jar"
+    download_if_not_exists "${FLINK_FOLDER}/lib/flink-table-api-scala-bridge_${LIB_VERSION}.jar" "https://repo1.maven.org/maven2/org/apache/flink/flink-table-api-scala-bridge_${SCALA_VERSION}/${FLINK_VERSION}/flink-table-api-scala-bridge_${LIB_VERSION}.jar"
+    download_if_not_exists "${FLINK_FOLDER}/lib/flink-sql-client-${FLINK_SQL}.jar" "https://repo1.maven.org/maven2/org/apache/flink/flink-sql-client/${FLINK_SQL}/flink-sql-client-${FLINK_SQL}.jar"
 
-sleep 60
+    echo "Flink setup completed."
+else
+    echo "Flink directory exists. Skipping setup."
+fi
 
-docker exec --user root  zeppelin sh -c 'rm -rf /opt/zeppelin/interpreter/flink/._zeppelin-flink-0.11.1-2.12.jar'
+# Restart Docker Compose
+docker-compose down && docker-compose up -d
+echo "Zeppelin setup completed."
